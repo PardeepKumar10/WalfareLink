@@ -2,15 +2,31 @@
 import React, { useState } from 'react';
 import { dbService } from '../services/dbService';
 import { Donation } from '../types';
+import InvoiceTemplate from './InvoiceTemplate';
 
 const AdminPanel: React.FC = () => {
   const [donations, setDonations] = useState<Donation[]>(dbService.getDonations());
+  const [selectedInvoice, setSelectedInvoice] = useState<Donation | null>(null);
 
   const totalFunds = donations.reduce((sum, d) => sum + d.totalAmount, 0);
 
+  const handlePrint = (donation: Donation) => {
+    setSelectedInvoice(donation);
+    setTimeout(() => {
+      window.print();
+      // Reset after print dialog
+      setSelectedInvoice(null);
+    }, 100);
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-10 px-4">
-      <div className="flex justify-between items-center mb-8">
+      {/* Hidden container for printing single invoices from list */}
+      <div className="hidden print:block">
+        {selectedInvoice && <InvoiceTemplate donation={selectedInvoice} />}
+      </div>
+
+      <div className="flex justify-between items-center mb-8 print:hidden">
         <div>
           <h2 className="text-3xl font-bold text-slate-800">Admin Oversight Panel</h2>
           <p className="text-slate-500">Monitoring welfare distribution and contributions.</p>
@@ -21,7 +37,7 @@ const AdminPanel: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8 print:hidden">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-slate-500 text-sm font-medium">Total Donations</p>
           <p className="text-2xl font-bold text-slate-800">{donations.length}</p>
@@ -40,9 +56,10 @@ const AdminPanel: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:hidden">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
           <h3 className="font-bold text-slate-700">Recent Contribution Records</h3>
+          <span className="text-xs text-slate-400">Showing {donations.length} records</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -53,7 +70,7 @@ const AdminPanel: React.FC = () => {
                 <th className="px-6 py-3">Type</th>
                 <th className="px-6 py-3">Amount</th>
                 <th className="px-6 py-3">Distribution Target</th>
-                <th className="px-6 py-3">Date</th>
+                <th className="px-6 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -77,8 +94,14 @@ const AdminPanel: React.FC = () => {
                       <p className="text-sm font-bold text-slate-700">{d.distribution.city}</p>
                       <p className="text-xs text-slate-400">{d.distribution.area}</p>
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-500">
-                      {new Date(d.createdAt).toLocaleDateString()}
+                    <td className="px-6 py-4">
+                      <button 
+                        onClick={() => handlePrint(d)}
+                        className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-colors"
+                        title="Print Invoice"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                      </button>
                     </td>
                   </tr>
                 ))

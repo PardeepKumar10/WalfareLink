@@ -4,6 +4,7 @@ import { User, Cause, Donation, RationItem, CauseCategory } from '../types';
 import { CAUSES, RATION_ITEMS, CITIES, AREAS } from '../constants';
 import { dbService } from '../services/dbService';
 import { getKitSuggestions } from '../services/geminiService';
+import InvoiceTemplate from './InvoiceTemplate';
 
 interface DonateProps {
   user: User;
@@ -11,17 +12,17 @@ interface DonateProps {
 }
 
 const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedCauseId, setSelectedCauseId] = useState<string>('');
   const [donationType, setDonationType] = useState<'money' | 'ration'>('money');
   const [moneyAmount, setMoneyAmount] = useState<number>(1000);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [aiSuggestion, setAiSuggestion] = useState<{ kitName: string, suggestedItems: string[] } | null>(null);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+  const [recentDonation, setRecentDonation] = useState<Donation | null>(null);
 
   const selectedCause = CAUSES.find(c => c.id === selectedCauseId);
 
-  // Auto-suggestion logic when cause changes
   useEffect(() => {
     if (selectedCause) {
       setIsLoadingSuggestion(true);
@@ -30,15 +31,14 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
         setIsLoadingSuggestion(false);
       });
     }
-  }, [selectedCauseId]);
+  }, [selectedCauseId, selectedCause]);
 
-  // Fix: Explicitly cast qty to number to resolve arithmetic operation type error on line 38
   const rationTotal = useMemo(() => {
     return Object.entries(quantities).reduce((total, [id, qty]) => {
       const item = RATION_ITEMS.find(i => i.id === id);
       const quantityValue = qty as number;
       return total + (item ? item.price * quantityValue : 0);
-    }, 0);
+    }, [quantities]);
   }, [quantities]);
 
   const handleQuantityChange = (id: string, qty: number) => {
@@ -46,7 +46,6 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
   };
 
   const distributionDetails = useMemo(() => {
-    // Deterministic distribution based on cause and timestamp for realism
     const city = CITIES[Math.floor(Math.random() * CITIES.length)];
     const area = AREAS[Math.floor(Math.random() * AREAS.length)];
     const date = new Date();
@@ -63,15 +62,72 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
       causeName: selectedCause?.name || '',
       type: donationType,
       totalAmount: donationType === 'money' ? moneyAmount : rationTotal,
-      // Fix: Cast quantity to number to resolve type mismatch in DonationItem array on line 64
       items: donationType === 'ration' ? Object.entries(quantities).map(([itemId, quantity]) => ({ itemId, quantity: quantity as number })) : [],
       distribution: distributionDetails,
       createdAt: new Date(),
     };
 
     dbService.addDonation(donation);
-    onSuccess();
+    setRecentDonation(donation);
+    setStep(4);
   };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  if (step === 4 && recentDonation) {
+    return (
+      <div className="max-w-4xl mx-auto py-10 px-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+           <div className="bg-emerald-600 p-12 text-center text-white relative overflow-hidden print:hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <svg className="w-48 h-48" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45L19.15 19H4.85L12 5.45zM11 16h2v2h-2v-2zm0-7h2v5h-2V9z"/></svg>
+              </div>
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+                <svg className="w-12 h-12 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <h2 className="text-4xl font-black mb-2 tracking-tight">Donation Successful!</h2>
+              <p className="text-emerald-100 text-lg opacity-90 max-w-md mx-auto">Your generous contribution is now being processed for distribution to {recentDonation.distribution.city}.</p>
+           </div>
+           
+           <div className="p-8 print:p-0">
+             <div className="mb-8 flex justify-between items-center print:hidden">
+                <h3 className="text-slate-500 font-bold uppercase tracking-widest text-xs">Official Receipt Preview</h3>
+                <button 
+                  onClick={handlePrint}
+                  className="bg-slate-800 text-white px-6 py-2 rounded-lg font-bold hover:bg-slate-900 transition-all flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                  Print Invoice
+                </button>
+             </div>
+
+             <InvoiceTemplate donation={recentDonation} />
+
+             <div className="mt-8 flex justify-center gap-4 print:hidden">
+                <button 
+                  onClick={onSuccess}
+                  className="text-emerald-600 font-bold border-2 border-emerald-600 px-8 py-3 rounded-xl hover:bg-emerald-50 transition-all"
+                >
+                  Back to Home
+                </button>
+                <button 
+                  onClick={() => {
+                    setStep(1);
+                    setSelectedCauseId('');
+                    setQuantities({});
+                  }}
+                  className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  Make Another Donation
+                </button>
+             </div>
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-4">
@@ -152,8 +208,13 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                   {aiSuggestion && (
-                     <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+                   {isLoadingSuggestion ? (
+                     <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl animate-pulse flex items-center gap-3">
+                        <div className="w-4 h-4 bg-emerald-300 rounded-full animate-bounce"></div>
+                        <span className="text-emerald-700 text-sm font-bold">Gemini is suggesting a kit...</span>
+                     </div>
+                   ) : aiSuggestion && (
+                     <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl group relative">
                         <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm mb-2">
                           <span className="bg-emerald-600 text-white p-1 rounded-full text-[10px] uppercase">AI Suggested</span>
                           {aiSuggestion.kitName}
