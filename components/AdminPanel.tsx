@@ -8,20 +8,18 @@ const AdminPanel: React.FC = () => {
   const [donations, setDonations] = useState<Donation[]>(dbService.getDonations());
   const [selectedInvoice, setSelectedInvoice] = useState<Donation | null>(null);
 
-  const totalFunds = donations.reduce((sum, d) => sum + d.totalAmount, 0);
+  const totalFunds = donations.reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
 
   const handlePrint = (donation: Donation) => {
     setSelectedInvoice(donation);
     setTimeout(() => {
       window.print();
-      // Reset after print dialog
       setSelectedInvoice(null);
     }, 100);
   };
 
   return (
     <div className="max-w-7xl mx-auto py-10 px-4">
-      {/* Hidden container for printing single invoices from list */}
       <div className="hidden print:block">
         {selectedInvoice && <InvoiceTemplate donation={selectedInvoice} />}
       </div>
@@ -89,7 +87,7 @@ const AdminPanel: React.FC = () => {
                       <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold uppercase">{d.causeName}</span>
                     </td>
                     <td className="px-6 py-4 capitalize text-sm font-medium text-slate-600">{d.type}</td>
-                    <td className="px-6 py-4 font-bold text-slate-900">PKR {d.totalAmount.toLocaleString()}</td>
+                    <td className="px-6 py-4 font-bold text-slate-900">PKR {Number(d.totalAmount).toLocaleString()}</td>
                     <td className="px-6 py-4">
                       <p className="text-sm font-bold text-slate-700">{d.distribution.city}</p>
                       <p className="text-xs text-slate-400">{d.distribution.area}</p>

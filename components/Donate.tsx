@@ -31,14 +31,14 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
         setIsLoadingSuggestion(false);
       });
     }
-  }, [selectedCauseId, selectedCause]);
+  }, [selectedCauseId]);
 
   const rationTotal = useMemo(() => {
     return Object.entries(quantities).reduce((total, [id, qty]) => {
       const item = RATION_ITEMS.find(i => i.id === id);
       const quantityValue = qty as number;
       return total + (item ? item.price * quantityValue : 0);
-    }, [quantities]);
+    }, 0); // Corrected initial value from [quantities] to 0
   }, [quantities]);
 
   const handleQuantityChange = (id: string, qty: number) => {
@@ -61,10 +61,10 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
       causeId: selectedCauseId,
       causeName: selectedCause?.name || '',
       type: donationType,
-      totalAmount: donationType === 'money' ? moneyAmount : rationTotal,
+      totalAmount: donationType === 'money' ? Number(moneyAmount) : Number(rationTotal),
       items: donationType === 'ration' ? Object.entries(quantities).map(([itemId, quantity]) => ({ itemId, quantity: quantity as number })) : [],
       distribution: distributionDetails,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
 
     dbService.addDonation(donation);
@@ -138,7 +138,6 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
         </div>
 
         <div className="p-8">
-          {/* Progress Bar */}
           <div className="flex items-center mb-10">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 1 ? 'bg-emerald-600 text-white' : 'bg-slate-200'}`}>1</div>
             <div className={`flex-1 h-1 mx-2 ${step >= 2 ? 'bg-emerald-600' : 'bg-slate-200'}`}></div>
@@ -284,7 +283,7 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
                 </div>
                 <div className="flex justify-between items-center text-lg">
                   <span className="text-amber-900 font-bold">Total Contribution</span>
-                  <span className="text-emerald-700 font-black">PKR {(donationType === 'money' ? moneyAmount : rationTotal).toLocaleString()}</span>
+                  <span className="text-emerald-700 font-black">PKR {(donationType === 'money' ? Number(moneyAmount) : Number(rationTotal)).toLocaleString()}</span>
                 </div>
               </div>
 

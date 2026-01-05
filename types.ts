@@ -60,5 +60,5 @@ export interface Donation {
     area: string;
     date: string;
   };
-  createdAt: Date;
+  createdAt: string | Date; // Changed to handle ISO strings from LocalStorage
 }
