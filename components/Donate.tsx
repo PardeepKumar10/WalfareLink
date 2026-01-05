@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, Cause, Donation, RationItem, CauseCategory } from '../types';
-import { CAUSES, RATION_ITEMS, CITIES, AREAS } from '../constants';
-import { dbService } from '../services/dbService';
-import { getKitSuggestions } from '../services/geminiService';
-import InvoiceTemplate from './InvoiceTemplate';
+import { User, Donation, CauseCategory } from '../types.ts';
+import { CAUSES, RATION_ITEMS, CITIES, AREAS } from '../constants.ts';
+import { dbService } from '../services/dbService.ts';
+import { getKitSuggestions } from '../services/geminiService.ts';
+import InvoiceTemplate from './InvoiceTemplate.tsx';
 
 interface DonateProps {
   user: User;
@@ -21,7 +21,7 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
   const [recentDonation, setRecentDonation] = useState<Donation | null>(null);
 
-  const selectedCause = CAUSES.find(c => c.id === selectedCauseId);
+  const selectedCause = useMemo(() => CAUSES.find(c => c.id === selectedCauseId), [selectedCauseId]);
 
   useEffect(() => {
     if (selectedCause) {
@@ -29,16 +29,16 @@ const Donate: React.FC<DonateProps> = ({ user, onSuccess }) => {
       getKitSuggestions(selectedCause.name).then(suggestion => {
         setAiSuggestion(suggestion);
         setIsLoadingSuggestion(false);
-      });
+      }).catch(() => setIsLoadingSuggestion(false));
     }
-  }, [selectedCauseId]);
+  }, [selectedCause]);
 
   const rationTotal = useMemo(() => {
     return Object.entries(quantities).reduce((total, [id, qty]) => {
       const item = RATION_ITEMS.find(i => i.id === id);
       const quantityValue = qty as number;
       return total + (item ? item.price * quantityValue : 0);
-    }, 0); // Corrected initial value from [quantities] to 0
+    }, 0);
   }, [quantities]);
 
   const handleQuantityChange = (id: string, qty: number) => {

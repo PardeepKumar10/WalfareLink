@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Role } from './types';
-import { dbService } from './services/dbService';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import Auth from './components/Auth';
-import LandingPage from './components/LandingPage';
-import Donate from './components/Donate';
-import AdminPanel from './components/AdminPanel';
+import { User, Role } from './types.ts';
+import { dbService } from './services/dbService.ts';
+import Navbar from './components/Navbar.tsx';
+import Footer from './components/Footer.tsx';
+import Auth from './components/Auth.tsx';
+import LandingPage from './components/LandingPage.tsx';
+import Donate from './components/Donate.tsx';
+import AdminPanel from './components/AdminPanel.tsx';
 
 type View = 'home' | 'donate' | 'admin' | 'auth';
 
@@ -20,8 +20,13 @@ const App: React.FC = () => {
     dbService.seedAdmin();
     // Check session
     const saved = localStorage.getItem('welfare_session');
-    if (saved) {
-      setCurrentUser(JSON.parse(saved));
+    if (saved && saved !== 'undefined') {
+      try {
+        setCurrentUser(JSON.parse(saved));
+      } catch (e) {
+        console.error("Session parse error:", e);
+        localStorage.removeItem('welfare_session');
+      }
     }
   }, []);
 

@@ -1,9 +1,10 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export async function getKitSuggestions(causeName: string) {
+  // Always create instance right before call for reliability
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -27,12 +28,10 @@ export async function getKitSuggestions(causeName: string) {
     const text = response.text;
     if (!text) return null;
     
-    // Safety check for common AI markdown wrapping
     const cleanJson = text.replace(/```json|```/gi, '').trim();
     return JSON.parse(cleanJson);
   } catch (error) {
     console.error("Gemini Suggestion Error:", error);
-    // Fallback static suggestion if AI fails
     return {
       kitName: "Standard Relief Kit",
       suggestedItems: ["Rice (40kg Bag)", "Cooking Oil", "Flour"]
