@@ -14,6 +14,7 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
+  password?: string; // Added for academic project simulation
   phone: string;
   cnic: string;
   occupation: Occupation;

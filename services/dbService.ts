@@ -1,5 +1,5 @@
 
-import { User, Donation, Role } from '../types';
+import { User, Donation, Role, Occupation } from '../types';
 
 const USERS_KEY = 'welfare_users';
 const DONATIONS_KEY = 'welfare_donations';
@@ -35,9 +35,10 @@ export const dbService = {
         id: 'admin-001',
         fullName: 'System Admin',
         email: 'admin@welfare.org',
+        password: 'admin123', // Default password for academic project
         phone: '0000-0000000',
         cnic: '00000-0000000-0',
-        occupation: 'job' as any,
+        occupation: Occupation.JOB,
         role: Role.ADMIN
       };
       dbService.saveUser(admin);
